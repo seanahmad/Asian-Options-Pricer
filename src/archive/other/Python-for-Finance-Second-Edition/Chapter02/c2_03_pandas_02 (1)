@@ -1,9 +1,0 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Nov 18 12:42:27 2016
-
-@author: yany
-"""
-
-import pandas as pd
-df = pd.DataFrame(np.random.randn(10, 4))
