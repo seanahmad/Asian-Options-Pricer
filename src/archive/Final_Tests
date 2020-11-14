@@ -1,0 +1,105 @@
+Final Results:
+--------------------------------------------------------------------------------
+# Initial Underlying Price
+S0 = 100
+
+# Risk-free rate (also known as the drift coefficient)
+r = 0.15
+
+# Dividend Yield Rate
+q = 0.0
+
+# Maturity
+T = 1.0
+
+# Strike
+K = 95
+
+# Volatility (also known as the diffusion coefficient)
+sigma = 0.3
+
+# Number of Iterations for Monte Carlo Simulation
+it = 100000
+
+# Time Steps
+N = 100000
+--------------------------------------------------------------------------------
+### Black-Scholes vs. Monte Carlo: Call Options with Geometric Average:
+- - - - - - - - - - - - - - - - -
+G_c(K=95,T=1):
+Black-Scholes: 12.508538481017892
+Monte Carlo: 12.447389441700023
+Error: 0.488858%
+- - - - - - - - - - - - - - - - -
+G_c(K=100,T=1):
+Black-Scholes: 9.61215966961383
+Monte Carlo: 9.638977665500253
+Error: 0.279001%
+- - - - - - - - - - - - - - - - -
+G_c(K=105,T=1):
+Black-Scholes: 7.185865725921304
+Monte Carlo: 7.171154551742235
+Error: 0.204724%
+- - - - - - - - - - - - - - - - -
+
+### Black-Scholes vs. Monte Carlo: Put Options with Geometric Average:
+- - - - - - - - - - - - - - - - -
+G_p(K=95,T=1):
+Black-Scholes: 2.194652455717922
+Monte Carlo: 2.1827188484716005
+Error: 0.543758407634428 %
+- - - - - - - - - - - - - - - - -
+G_p(K=100,T=1):
+Black-Scholes: 3.6018135264391438
+Monte Carlo: 3.5923289672198133
+Error: 0.26332732524071434 %
+- - - - - - - - - - - - - - - - -
+G_p(K=105,T=1):
+Black-Scholes: 5.479059464871914
+Monte Carlo: 5.455180840115154
+Error: 0.4358161270169417 %
+- - - - - - - - - - - - - - - - -
+### Asian call option test cases (Linetsky 2002):
+- - - - - - - - - - - - - - - - -
+Case 1 (r=0.02, sigma=0.10, T=1, S0=2.0):
+G_c(K=2,T=1):
+Linetsky: 0.0559860415
+Monte Carlo: 0.0559778385271486
+Error: 0.014651817902507759 %
+- - - - - - - - - - - - - - - - -
+Case 2 (r = 0.18, sigma = 0.30, T = 1, S0 = 2.0):
+G_c(K=2,T=1):
+Linetsky: 0.2183875466
+Monte Carlo: 0.2170470505500451
+Error: 0.6138152430505384 %
+- - - - - - - - - - - - - - - - -
+Case 3 (r = 0.0125, sigma = 0.25, T = 2, S0 = 2.0):
+G_c(K=2,T=2):
+Linetsky: 0.172268741
+Monte Carlo: 0.1726129894916586
+Error: 0.19983224446888723 %
+- - - - - - - - - - - - - - - - -
+Case 4 (r = 0.05, sigma = 0.50, T = 1, S0 = 1.9):
+G_c(K=2,T=1):
+Linetsky: 0.1931737903
+Monte Carlo: 0.1917548655071399
+Error: 0.7345327700287397 %
+- - - - - - - - - - - - - - - - -
+Case 5 (r = 0.05, sigma = 0.50, T = 1, S0 = 2.0):
+G_c(K=2,T=1):
+Linetsky: 0.2464156905
+Monte Carlo: 0.2472542514106814
+Error: 0.3403033747485359 %
+- - - - - - - - - - - - - - - - -
+Case 6 (r = 0.05, sigma = 0.50, T = 1, S0 = 2.1):
+G_c(K=2,T=1):
+Linetsky: 0.3062203648
+Monte Carlo: 0.3066361640492379
+Error: 0.1357843230019895 %
+- - - - - - - - - - - - - - - - -
+Case 7 (r = 0.05, sigma = 0.50, T = 2.0, S0 = 2.0):
+G_c(K=2,T=2):
+Linetsky: 0.350095219
+Monte Carlo: 0.3475691276119277
+Error: 0.7215440974280498 %
+- - - - - - - - - - - - - - - - -

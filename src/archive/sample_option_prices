@@ -1,0 +1,80 @@
+Black-Scholes vs. Monte Carlo geometric average calls:
+- - - - - - - - - - - - - - - - -
+G_c(K=95,T=1):
+Black-Scholes: 12.508538481017892
+Monte Carlo: 12.415107719069699
+Error: 0.746936%
+- - - - - - - - - - - - - - - - -
+G_c(K=100,T=1):
+Black-Scholes: 9.61215966961383
+Monte Carlo: 9.565444659497516
+Error: 0.485999%
+- - - - - - - - - - - - - - - - -
+G_c(K=105,T=1):
+Black-Scholes: 7.185865725921304
+Monte Carlo: 7.175874566193529
+Error: 0.139039%
+- - - - - - - - - - - - - - - - -
+
+Black-Scholes vs. Monte Carlo geometric average puts:
+- - - - - - - - - - - - - - - - -
+G_p(K=95,T=1):
+Black-Scholes: 2.194652455717922
+Monte Carlo: 2.1758488924716275
+Error: 0.8567900214589346 %
+- - - - - - - - - - - - - - - - -
+G_p(K=100,T=1):
+Black-Scholes: 3.6018135264391438
+Monte Carlo: 3.60366358119183
+Error: 0.05136453453533135 %
+- - - - - - - - - - - - - - - - -
+G_p(K=105,T=1):
+Black-Scholes: 5.479059464871914
+Monte Carlo: 5.470464503824308
+Error: 0.1568692784356633 %
+- - - - - - - - - - - - - - - - -
+
+Linetsky test cases for arithmetic average calls:
+- - - - - - - - - - - - - - - - -
+Case 1 (r=0.02, sigma=0.10, T=1, S0=2.0):
+G_c(K=2,T=1):
+Black-Scholes: 0.054952094869989455
+Monte Carlo: 0.055896452244051376
+Error: 1.7185102338612652 %
+- - - - - - - - - - - - - - - - -
+Case 2 (r = 0.18, sigma = 0.30, T = 1, S0 = 2.0):
+G_c(K=2,T=1):
+Black-Scholes: 0.20542303569544912
+Monte Carlo: 0.21436079179453332
+Error: 4.3509025503522 %
+- - - - - - - - - - - - - - - - -
+Case 3 (r = 0.0125, sigma = 0.25, T = 2, S0 = 2.0):
+G_c(K=2,T=2):
+Black-Scholes: 0.16077854922195098
+Monte Carlo: 0.18506809471362481
+Error: 15.107454078431006 %
+- - - - - - - - - - - - - - - - -
+Case 4 (r = 0.05, sigma = 0.50, T = 1, S0 = 1.9):
+G_c(K=2,T=1):
+Black-Scholes: 0.1723399145719022
+Monte Carlo: 0.19369321382583743
+Error: 12.390222721751659 %
+- - - - - - - - - - - - - - - - -
+Case 5 (r = 0.05, sigma = 0.50, T = 1, S0 = 2.0):
+G_c(K=2,T=1):
+Black-Scholes: 0.2227879316100565
+Monte Carlo: 0.24618301871183224
+Error: 10.50105673709648 %
+- - - - - - - - - - - - - - - - -
+Case 6 (r = 0.05, sigma = 0.50, T = 1, S0 = 2.1):
+G_c(K=2,T=1):
+Black-Scholes: 0.27974266392421687
+Monte Carlo: 0.3064276968435594
+Error: 9.539135913344845 %
+- - - - - - - - - - - - - - - - -
+Case 7 (r = 0.05, sigma = 0.50, T = 2.0, S0 = 2.0):
+G_c(K=2,T=2):
+Black-Scholes: 0.3015600627137399
+Monte Carlo: 0.38791004024758374
+Error: 28.63442087018424 %
+- - - - - - - - - - - - - - - - -

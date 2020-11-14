@@ -1,0 +1,522 @@
+# -*- coding: utf-8 -*-
+# region Summary
+"""
+# Asian Options Pricing & Hedging Tool
+
+Course: FE 620: Pricing & Hedging | Stevens Institute of Technology\
+Advisor: Dan Pirjol\
+Group: Theo Dimitrasopoulos, Will Kraemer, Vaikunth Seshadri, Snehal Rajguru\
+
+Link: https://colab.research.google.com/drive/1g9xDGWCoKgFhNQWMW_nGfeJ8C1_5zaOE \
+*Version: v6.0*
+
+**Instructions:**\
+Click the execution button on the top left corner of each code cell to execute it. To run all cells in descending order, go to the menu bar at the top and click Runtime -> Run all (or use the **Ctrl-F9** or **⌘-F9** hotkey for Windows and MacOSX respectively).
+
+### Import Packages
+*Note: the **"!pip install -q"** lines (i.e. lines 24-29) only need to be executed the first time you run the notebook. If you receive the message **"Requirement already satisfied:"**, wrap them in triple quotes (' ' ' in lines 23 & 30)*
+"""
+# endregion
+
+# region Import Packages
+# If you receive a series of "Requirement already satisfied:" messages during output, wrap them in triple quotes (''' in lines 3 & 10)
+'''
+!pip install numpy
+!pip install matplotlib
+!pip install scipy
+!pip install pandas
+!pip install pandas-datareader
+!pip install yfinance
+'''
+# Import Packages
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import norm
+from pandas_datareader import data as pdr
+import yfinance as yf
+
+yf.pdr_override()
+# endregion
+
+# region Specifications
+"""### Specifications
+Insert the desired values in the form fields (right) or directly to the code (left):
+"""
+# @title Pricer Parameters:
+
+# Initial Underlying Price
+S0 = 100  # @param {type:"number"}
+
+# Expected Returns (also known as the drift coefficient)
+r = 0.15  # @param {type:"number"}
+
+# Dividend Yield Rate
+q = 0.0  # @param {type:"number"}
+
+# Maturity
+T = 1  # @param {type:"number"}
+
+# Strike
+K = 90  # @param {type:"number"}
+
+# Volatility (also known as the diffusion coefficient)
+sigma = 0.3  # @param {type:"number"}
+
+# Number of Iterations for Monte Carlo Simulation
+it = 10000  # @param {type:"integer"}
+
+# Time Discretization
+N = 1000000  # @param {type:"integer"}
+# endregion
+
+# region Plot Parameters
+"""### Plot Parameters"""
+
+# @title Element Sizes:
+
+# Universal Plot width
+width = 15  # @param {type:"integer"}
+
+# Universal Plot height
+height = 10  # @param {type:"integer"}
+
+# Universal xtick size
+xtick_size = 12  # @param {type:"integer"}
+
+# Universal ytick size
+ytick_size = 12  # @param {type:"integer"}
+
+# Universal title font size
+title_size = 18  # @param {type:"integer"}
+
+# Universal xlabel font size
+xlabel_size = 12  # @param {type:"integer"}
+
+# Universal xlabel font size
+ylabel_size = 12  # @param {type:"integer"}
+
+# Universal legend font size
+legend_size = 10  # @param {type:"integer"}
+# endregion
+
+# region Set Parameters
+plt.rcParams['figure.figsize'] = (width, height)
+params = {'text.color': 'black',
+          'xtick.color': 'black',
+          'ytick.color': 'black',
+          'xtick.labelsize': xtick_size,
+          'ytick.labelsize': ytick_size,
+          'legend.loc': 'upper left',
+          }
+plt.rcParams.update(params)
+# endregion
+
+# region Geometric Brownian Motion Definition
+"""### Geometric Exact Pricing Definition"""
+
+def geom_exact(r, q, T, K, S0, sigma):
+    G0 = S0 * np.exp(0.5 * (r - q - (sigma ** 2) / 6) * T - (1 / 12) * (sigma ** 2) * T)
+    Sigma_G = sigma / np.sqrt(3)
+    d1 = (1 / (Sigma_G * np.sqrt(T))) * (np.log(G0 / K) + 0.5 * (Sigma_G ** 2) * T)
+    d2 = (1 / (Sigma_G * np.sqrt(T))) * (np.log(G0 / K) - 0.5 * (Sigma_G ** 2) * T)
+    G_c = np.exp(-r * T) * (G0 * norm.cdf(d1) - K * norm.cdf(d2))
+    G_p = np.exp(-r * T) * (K * norm.cdf(-d2) - G0 * norm.cdf(-d1))
+    return G_c, G_p
+
+
+print('The exact call Asian option price with geometric averaging is: ', geom_exact(r, q, T, K, S0, sigma)[0])
+print('The exact put Asian option price with geometric averaging is: ', geom_exact(r, q, T, K, S0, sigma)[1])
+# endregion
+
+# region Geometric Brownian Motion Definition
+"""### Geometric Brownian Motion Definition"""
+
+def monte_carlo_gbm(N, r, S0, sigma):
+    D_t = np.linspace(0., 1., N)
+    W = np.cumsum(np.random.normal(0., np.sqrt(D_t), int(N)) * np.sqrt(1. / (N)))
+    S_i = S0 * np.exp(sigma * W + (r - q - 0.5 * sigma ** 2) * D_t)
+    S = []
+    S.append(S0)
+    for i in range(1, N + 1):
+        S = S_i[:i]
+    return S, D_t
+
+
+# endregion
+# region Geometric Average Asian Option: Monte Carlo Definition
+"""### Geometric Average Asian Option: Monte Carlo Definition"""
+
+def monte_carlo_geometric(it, N, K, S0, r, sigma):
+    D_t = np.linspace(0., 1., N)
+    W = np.cumsum(np.random.normal(0., np.sqrt(D_t), int(N)) * np.sqrt(1. / (N)))
+    S_i = S0 * np.exp(sigma * W + (r - q - 0.5 * sigma ** 2) * D_t)
+    geom_avg = []
+    payoff_call = []
+    payoff_put = []
+    for i in range(1, it + 1):
+        S = S_i[:i]
+        geom_avg.append(np.exp(1 / it * np.sum(np.log(S_i[:i]))))
+        payoff_call.append(np.max((np.exp(1 / it * np.sum(np.log(S_i[:i])))) - K, 0))
+        payoff_put.append(np.max(K - (np.exp(1 / it * np.sum(np.log(S_i[:i])))), 0))
+    return geom_avg, payoff_call, payoff_put, S
+
+
+# endregion
+
+# region Strike Vector for Plotting
+"""### Strike Vector for Plotting"""
+
+strike = np.linspace(K - 30, K + 30, it)
+# endregion
+
+# region Plot Data
+"""### Plot Data"""
+
+average_geom = monte_carlo_geometric(it, N, K, S0, r, sigma)[0]
+payoff_call = monte_carlo_geometric(it, N, K, S0, r, sigma)[1]
+payoff_put = monte_carlo_geometric(it, N, K, S0, r, sigma)[2]
+price = monte_carlo_geometric(it, N, K, S0, r, sigma)[3]
+# endregion
+
+# region Geometric Average Price
+"""### Geometric Average Price"""
+
+'''Geometric Average Price vs. Spot Price'''
+avg_vs_spot = plt.figure()
+plt.title('Geometric Average vs. Spot Price', color='black', fontsize=title_size)
+plt.xlabel('Spot Price ($)', color='black', fontsize=xlabel_size)
+plt.ylabel('Geometric Average ($)', color='black', fontsize=ylabel_size)
+plt.plot(average_geom, price)
+plt.show()
+
+'''Geometric Average Price'''
+g_avg = plt.figure()
+plt.title('Geometric Average', color='black', fontsize=title_size)
+plt.xlabel('Iterations', color='black', fontsize=xlabel_size)
+plt.ylabel('Geometric Average ($)', color='black', fontsize=ylabel_size)
+plt.plot(average_geom)
+plt.show()
+# endregion
+
+# region Geometric Average Call Option
+"""### Geometric Average Call Option"""
+
+'''Call payoff vs. Spot Price'''
+callpayoff_vs_spot = plt.figure()
+plt.title('Call Option Payoff vs. Spot Price', color='black', fontsize=title_size)
+plt.xlabel('Spot Price ($)', color='black', fontsize=xlabel_size)
+plt.ylabel('Payoff ($)', color='black', fontsize=ylabel_size)
+plt.plot(payoff_call, price)
+plt.show()
+
+'''Call payoff'''
+callpayoff = plt.figure()
+plt.title('Call Option Payoff', color='black', fontsize=title_size)
+plt.xlabel('Iterations', color='black', fontsize=xlabel_size)
+plt.ylabel('Payoff ($)', color='black', fontsize=ylabel_size)
+plt.plot(payoff_call)
+plt.show()
+
+'''Call vs. Strike'''
+callpayoff_vs_strike = plt.figure()
+plt.title('Call Option Payoff vs. Strike', color='black', fontsize=title_size)
+plt.xlabel('Strike ($)', color='black', fontsize=xlabel_size)
+plt.ylabel('Payoff ($)', color='black', fontsize=ylabel_size)
+plt.plot(payoff_call, np.abs(strike))
+plt.show()
+# endregion
+
+# region Geometric Average Put Option
+"""### Geometric Average Put Option"""
+
+'''Put payoff vs. Spot Price'''
+putpayoff__vs_spot = plt.figure()
+plt.title('Put Option Payoff vs. Spot Price', color='black', fontsize=title_size)
+plt.xlabel('Spot Price ($)', color='black', fontsize=xlabel_size)
+plt.ylabel('Payoff ($)', color='black', fontsize=ylabel_size)
+plt.plot(payoff_put, price)
+plt.show()
+
+'''Put payoff'''
+putpayoff = plt.figure()
+plt.title('Put Option Payoff', color='black', fontsize=title_size)
+plt.xlabel('Iterations', color='black', fontsize=xlabel_size)
+plt.ylabel('Payoff ($)', color='black', fontsize=ylabel_size)
+plt.plot(payoff_put)
+plt.show()
+
+'''Put vs. Strike'''
+putpayoff_vs_strike = plt.figure()
+plt.title('Put Option Payoff vs. Strike', color='black', fontsize=title_size)
+plt.xlabel('Strike ($)', color='black', fontsize=xlabel_size)
+plt.ylabel('Payoff ($)', color='black', fontsize=ylabel_size)
+plt.plot(payoff_put, strike)
+plt.show()
+# endregion
+
+# region Pricer Benchmarking: Random Data Generation
+"""### Pricer Benchmarking: Random Data Generation"""
+
+'''Generate Random Si'''
+Dt = monte_carlo_gbm(N, r, S0, sigma)[1]
+S1 = monte_carlo_gbm(N, np.random.random(), np.random.uniform(np.random.random() * 10, 500.0), np.random.random())[0]
+S2 = monte_carlo_gbm(N, np.random.random(), np.random.uniform(np.random.random() * 10, 500.0), np.random.random())[0]
+S3 = monte_carlo_gbm(N, np.random.random(), np.random.uniform(np.random.random() * 10, 500.0), np.random.random())[0]
+S4 = monte_carlo_gbm(N, np.random.random(), np.random.uniform(np.random.random() * 10, 500.0), np.random.random())[0]
+S5 = monte_carlo_gbm(N, np.random.random(), np.random.uniform(np.random.random() * 10, 500.0), np.random.random())[0]
+S6 = monte_carlo_gbm(N, np.random.random(), np.random.uniform(np.random.random() * 10, 500.0), np.random.random())[0]
+S7 = monte_carlo_gbm(N, np.random.random(), np.random.uniform(np.random.random() * 10, 500.0), np.random.random())[0]
+S8 = monte_carlo_gbm(N, np.random.random(), np.random.uniform(np.random.random() * 10, 500.0), np.random.random())[0]
+S9 = monte_carlo_gbm(N, np.random.random(), np.random.uniform(np.random.random() * 10, 500.0), np.random.random())[0]
+S10 = monte_carlo_gbm(N, np.random.random(), np.random.uniform(np.random.random() * 10, 500.0), np.random.random())[0]
+
+'''Random Si plots'''
+market_data_random = plt.figure()
+plt.plot(Dt, S1, label='Stock 1')
+plt.plot(Dt, S2, label='Stock 2')
+plt.plot(Dt, S3, label='Stock 3')
+plt.plot(Dt, S4, label='Stock 4')
+plt.plot(Dt, S5, label='Stock 5')
+plt.plot(Dt, S6, label='Stock 6')
+plt.plot(Dt, S7, label='Stock 7')
+plt.plot(Dt, S8, label='Stock 8')
+plt.plot(Dt, S9, label='Stock 9')
+plt.plot(Dt, S10, label='Stock 10')
+
+plt.title('Randomly generated paths for 10 stocks', color='black', fontsize=title_size)
+plt.xlabel('Dt', color='black', fontsize=xlabel_size)
+plt.ylabel('Price ($)', color='black', fontsize=ylabel_size)
+plt.legend(("Stock 1",
+            'Stock 2',
+            'Stock 3',
+            'Stock 4',
+            'Stock 5',
+            'Stock 6',
+            'Stock 7',
+            'Stock 8',
+            'Stock 9',
+            'Stock 10'
+            ),
+           fontsize=legend_size
+           )
+plt.show()
+# endregion
+
+# region Pricer Benchmarking: Market Data Extraction
+"""### Pricer Benchmarking: Market Data Extraction
+After setting the desired parameters, run the cell using the execution button in the top left corner of the cell (Cell #22):
+"""
+# endregion
+
+# region Historical Data Parameters
+# @title Historical Data Parameters:
+
+# Start date of historical data
+start_date = "2000-01-01"  # @param {type:"date"}
+# End date of historical data
+end_date = "2020-12-31"  # @param {type:"date"}
+# Type of historical data
+data_type = "Adj Close"  # @param ["Open", "High", "Low", "Close", "Adj Close", "Volume"]
+# endregion
+
+# region Random assortment of stocks
+# Random assortment of stocks:
+market_data_real_random = plt.figure()
+msft = pdr.get_data_yahoo("MSFT", start=start_date, end=end_date)[data_type]
+plt.plot(msft, label='Microsoft (MSFT)')
+
+aapl = pdr.get_data_yahoo("AAPL", start=start_date, end=end_date)[data_type]
+plt.plot(aapl, label='Apple (AAPL)')
+
+gs = pdr.get_data_yahoo("GS", start=start_date, end=end_date)[data_type]
+plt.plot(gs, label='Goldman Sachs (GS)')
+
+nflx = pdr.get_data_yahoo("NFLX", start=start_date, end=end_date)[data_type]
+plt.plot(nflx, label='Netflix (NFLX)')
+
+fb = pdr.get_data_yahoo("FB", start=start_date, end=end_date)[data_type]
+plt.plot(fb, label='Facebook (FB)')
+
+f = pdr.get_data_yahoo("F", start=start_date, end=end_date)[data_type]
+plt.plot(f, label='Ford (F)')
+
+twtr = pdr.get_data_yahoo("TWTR", start=start_date, end=end_date)[data_type]
+plt.plot(twtr, label='Twitter (TWTR)')
+
+ibm = pdr.get_data_yahoo("IBM", start=start_date, end=end_date)[data_type]
+plt.plot(ibm, label='IBM (IBM)')
+
+baba = pdr.get_data_yahoo("BABA", start=start_date, end=end_date)[data_type]
+plt.plot(baba, label='Alibaba (BABA)')
+
+ba = pdr.get_data_yahoo("BA", start=start_date, end=end_date)[data_type]
+plt.plot(ba, label='Boeing (BA)')
+
+cme = pdr.get_data_yahoo("CME", start=start_date, end=end_date)[data_type]
+plt.plot(cme, label='Chicago Mercantile Exchange (CME)')
+
+# Citi never quite recovered from the downfall (staggering losses around 2008 and no subsequent rebound)
+c = pdr.get_data_yahoo("C", start=start_date, end=end_date)[data_type]
+plt.plot(c, label='Citigroup (C)')
+
+ttl1 = "Historical"
+ttl2 = data_type
+ttl3 = "of selected Securities"
+title = " ".join((ttl1, ttl2, ttl3))
+plt.title(title, color='black', fontsize=title_size)
+plt.xlabel('Date', color='black', fontsize=xlabel_size)
+
+if data_type == "Volume":
+    ylab = data_type + " (#)"
+else:
+    ylab = data_type + " ($)"
+
+plt.ylabel(ylab, color='black', fontsize=ylabel_size)
+plt.legend()
+plt.show()
+# endregion
+
+# region Dow 30 stocks
+# Dow 30 stocks:
+market_data_real_dow30 = plt.figure()
+mmm = pdr.get_data_yahoo("MMM", start=start_date, end=end_date)[data_type]
+plt.plot(mmm, label='3M (MMM)')
+
+axp = pdr.get_data_yahoo("AXP", start=start_date, end=end_date)[data_type]
+plt.plot(axp, label='American Express (AXP)')
+
+baba = pdr.get_data_yahoo("BABA", start=start_date, end=end_date)[data_type]
+plt.plot(baba, label='Alibaba (BABA)')
+
+aapl = pdr.get_data_yahoo("AAPL", start=start_date, end=end_date)[data_type]
+plt.plot(aapl, label='Apple (AAPL)')
+
+ba = pdr.get_data_yahoo("BA", start=start_date, end=end_date)[data_type]
+plt.plot(ba, label='Boeing (BA)')
+
+cat = pdr.get_data_yahoo("CAT", start=start_date, end=end_date)[data_type]
+plt.plot(cat, label='Caterpillar (CAT)')
+
+cvx = pdr.get_data_yahoo("CVX", start=start_date, end=end_date)[data_type]
+plt.plot(cvx, label='Chevron (CVX)')
+
+csco = pdr.get_data_yahoo("CSCO", start=start_date, end=end_date)[data_type]
+plt.plot(csco, label='Cisco (CSCO)')
+
+ko = pdr.get_data_yahoo("KO", start=start_date, end=end_date)[data_type]
+plt.plot(ko, label='Coca Cola (KO)')
+
+dis = pdr.get_data_yahoo("DIS", start=start_date, end=end_date)[data_type]
+plt.plot(dis, label='The Walt Disney Company (DIS)')
+
+dd = pdr.get_data_yahoo("DD", start=start_date, end=end_date)[data_type]
+plt.plot(dd, label='DowDuPont (DD)')
+
+xom = pdr.get_data_yahoo("XOM", start=start_date, end=end_date)[data_type]
+plt.plot(xom, label='ExxonMobil (XOM)')
+
+ge = pdr.get_data_yahoo("GE", start=start_date, end=end_date)[data_type]
+plt.plot(ge, label='General Electric (GE)')
+
+gs = pdr.get_data_yahoo("GS", start=start_date, end=end_date)[data_type]
+plt.plot(gs, label='Goldman Sachs (GS)')
+
+hd = pdr.get_data_yahoo("HD", start=start_date, end=end_date)[data_type]
+plt.plot(hd, label='The Home Depot (HD)')
+
+ibm = pdr.get_data_yahoo("IBM", start=start_date, end=end_date)[data_type]
+plt.plot(ibm, label='IBM (IBM)')
+
+intc = pdr.get_data_yahoo("INTC", start=start_date, end=end_date)[data_type]
+plt.plot(intc, label='Intel (INTC)')
+
+jnj = pdr.get_data_yahoo("JNJ", start=start_date, end=end_date)[data_type]
+plt.plot(jnj, label='Johnson & Johnson (JNJ)')
+
+jpm = pdr.get_data_yahoo("JPM", start=start_date, end=end_date)[data_type]
+plt.plot(jpm, label='JPMorgan Chase (JPM)')
+
+mcd = pdr.get_data_yahoo("MCD", start=start_date, end=end_date)[data_type]
+plt.plot(mcd, label='McDonalds (MCD)')
+
+mrk = pdr.get_data_yahoo("MRK", start=start_date, end=end_date)[data_type]
+plt.plot(mrk, label='Merck (MRK)')
+
+msft = pdr.get_data_yahoo("MSFT", start=start_date, end=end_date)[data_type]
+plt.plot(msft, label='Microsoft (MSFT)')
+
+nke = pdr.get_data_yahoo("NKE", start=start_date, end=end_date)[data_type]
+plt.plot(nke, label='Nike (NKE)')
+
+pfe = pdr.get_data_yahoo("PFE", start=start_date, end=end_date)[data_type]
+plt.plot(pfe, label='Pfizer (PFE)')
+
+pg = pdr.get_data_yahoo("PG", start=start_date, end=end_date)[data_type]
+plt.plot(pg, label='Procter & Gamble (PG)')
+
+trv = pdr.get_data_yahoo("TRV", start=start_date, end=end_date)[data_type]
+plt.plot(trv, label='Travelers Companies, Inc (TRV)')
+
+utx = pdr.get_data_yahoo("UTX", start=start_date, end=end_date)[data_type]
+plt.plot(utx, label='United Technologies (UTX)')
+
+unh = pdr.get_data_yahoo("UNH", start=start_date, end=end_date)[data_type]
+plt.plot(unh, label='United Health (UNH)')
+
+vz = pdr.get_data_yahoo("VZ", start=start_date, end=end_date)[data_type]
+plt.plot(vz, label='Verizon (VZ)')
+
+v = pdr.get_data_yahoo("V", start=start_date, end=end_date)[data_type]
+plt.plot(v, label='Visa (V)')
+
+wmt = pdr.get_data_yahoo("WMT", start=start_date, end=end_date)[data_type]
+plt.plot(wmt, label='Wal-Mart (WMT)')
+
+ttl1 = "Historical"
+ttl2 = data_type
+ttl3 = "of the Dow 30"
+title = " ".join((ttl1, ttl2, ttl3))
+plt.title(title, color='black', fontsize=title_size)
+plt.xlabel('Date', color='black', fontsize=xlabel_size)
+
+if data_type == "Volume":
+    ylab = data_type + " (#)"
+else:
+    ylab = data_type + " ($)"
+
+plt.ylabel(ylab, color='black', fontsize=ylabel_size)
+plt.legend()
+plt.show()
+# endregion
+
+
+# region Jokes
+market_data_real_jokes = plt.figure()
+
+# Citi never quite recovered from the downfall (staggering losses around 2008 and no subsequent rebound)
+#c = pdr.get_data_yahoo("C", start=start_date, end=end_date)[data_type]
+#plt.plot(c, label='Citigroup (C)')
+
+# Kalispera
+#lehkq = pdr.get_data_yahoo("LEHKQ", start=start_date, end=end_date)[data_type]
+#plt.plot(lehkq, label='Lehman Brothers Holdings (LEHKQ)')
+
+ddog = pdr.get_data_yahoo("DDOG", start=start_date, end=end_date)[data_type]
+plt.plot(ddog, label='Datadog (DDOG)')
+
+ttl1 = "Historical"
+ttl2 = data_type
+ttl3 = "of JOKES"
+title = " ".join((ttl1, ttl2, ttl3))
+plt.title(title, color='black', fontsize=title_size)
+plt.xlabel('Date', color='black', fontsize=xlabel_size)
+
+if data_type == "Volume":
+    ylab = data_type + " (#)"
+else:
+    ylab = data_type + " ($)"
+
+plt.ylabel(ylab, color='black', fontsize=ylabel_size)
+plt.legend()
+plt.show()
+# endregion
